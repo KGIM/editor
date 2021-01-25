@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>newsapp</title>
+    <!-- 引入样式 -->
+    <link rel="stylesheet" href="./index.css" />
+    <link rel="stylesheet" href="./css/iview.css" />
+    <link
+      rel="stylesheet"
+      href="//unpkg.com/view-design/dist/styles/iview.css"
+    />
+    <!-- quill样式表 -->
+    <link href="./css/quill.snow.css" rel="stylesheet" />
+    <link href="./css/quill.bubble.css" rel="stylesheet" />
+    <link href="./css/quill.core.css" rel="stylesheet" />
+  </head>
+  <body>
+    <header id="index-title">新闻展示首页</header>
+    <div id="app">
+      <div id="home">
+        <div class="toolbar">
+          <div class="toolbar-left">
+            <div class="left-item">
+              <div class="item-title">新闻类型</div>
+              <i-select v-model="newsType" @on-change="optionChange">
+                <i-option
+                  v-for="item in options"
+                  :value="item.value"
+                  :key="item.value"
+                  >{{ item.label }}</i-option
+                >
+              </i-select>
+            </div>
+            <div class="left-item">
+              <div class="item-title">只搜索标题</div>
+              <i-input v-model="searchValue" placeholder="请输入搜索内容" />
+            </div>
+            <button class="search-btn" @click="searchNews">搜索</button>
+            <button class="addBtn" @click="addNews">添加文章</button>
+          </div>
+          <div class="toolbar-right">
+            <Page
+              :total="totalLen"
+              :current="page"
+              show-elevator
+              @on-change="pageSizeChange"
+            />
+          </div>
+        </div>
+        <!-- 文章列表内容展示 -->
+        <i-table
+          :columns="columns"
+          :data="tableData"
+          @on-row-click="rowClick"
+        ></i-table>
+      </div>
+      <!-- 文档编辑 -->
+      <!-- 容器 -->
+      <div class="back" v-show="showDrawer" @click="drawerAnimation"></div>
+      <div id="drawer">
+        <template v-if="!ifAddNews">
+          <div class="editor-container">
+            <div class="container-header">
+              <div class="title">新闻详情</div>
+              <div class="detail">
+                <div>新闻类型：{{newDetail != null ? newDetail.type : ''}}</div>
+                <div>
+                  创建时间：{{newDetail != null ? newDetail.create_at : ''}}
+                </div>
+                <div>
+                  最新修改时间：{{newDetail != null ? newDetail.change_at : ''}}
+                </div>
+                <!-- <button class="edit-btn">编辑</button> -->
+                <button
+                  class="edit-btn"
+                  @click="()=>{ifAddNews=true;addingNews=true;}"
+                >
+                  编辑
+                </button>
+              </div>
+            </div>
+            <quill-editor
+              v-model="content"
+              ref="myQuillEditor"
+              :options="toolOptions"
+              @focus="onEditorFocus($event)"
+            >
+            </quill-editor>
+          </div>
+        </template>
+        <template v-else>
+          <div class="editor-container">
+            <div class="container-header">
+              <div class="title">添加新闻</div>
+              <div class="detail">
+                <div>
+                  新闻类型：
+                  <i-select v-model="saveNewsType" @on-change="optionChange">
+                    <i-option
+                      v-for="item in options2"
+                      :value="item.value"
+                      :key="item.value"
+                      >{{ item.label }}</i-option
+                    >
+                  </i-select>
+                </div>
+                <button class="edit-btn" @click="saveContent">保存</button>
+              </div>
+            </div>
+            <quill-editor
+              v-model="content"
+              ref="myQuillEditor2"
+              :options="toolOptions"
+              @focus="onEditorFocus"
+            >
+            </quill-editor>
+          </div>
+        </template>
+      </div>
+    </div>
+    <script src="./js/vue_res.js"></script>
+    <script src="./js/iview.min.js"></script>
+    <!-- 引入Quill -->
+    <script src="./js/quill.js"></script>
+    <!-- vue配合使用的插件 -->
+    <script src="./js/vue-quill-editor.js"></script>
+    <!-- 控制图片大小尺寸的插件 -->
+    <script src="./js/image-resize.min.js"></script>
+    <script src="./js/quill-image-drop-and-paste.min.js"></script>
+    <!-- <script src="./js/image-drop.min.js"></script> -->
+    <script src="https://cdn.bootcdn.net/ajax/libs/axios/0.21.0/axios.js"></script>
+    <script src="./js/moment.js"></script>
+    <!-- 配置富文本编辑器 -->
+    <script>
+      // toolbar工具栏的工具选项（默认展示所有新闻）
+      const toolOptions = [
+        ['bold', 'italic', 'underline', 'strike'],
+        ['blockquote', 'code-block'],
+        [{ header: 1 }, { header: 2 }],
+        [{ list: 'ordered' }, { list: 'bullet' }],
+        [{ script: 'sub' }, { script: 'super' }],
+        [{ indent: '-1' }, { indent: '+1' }],
+        [{ direction: 'rtl' }],
+        [{ size: ['small', false, 'large', 'huge'] }],
+        [{ header: [1, 2, 3, 4, 5, 6, false] }],
+        [{ color: [] }, { background: [] }],
+        [{ font: [] }],
+        [{ align: [] }],
+        [{ clean: '源码编辑' }],
+        ['link', 'image', 'video'],
+        ['sourceEditor'], //新添加的工具
+      ];
+      function randomFileName() {
+        const randomArr = [
+          'a',
+          'b',
+          'c',
+          'd',
+          'e',
+          'f',
+          'g',
+          'h',
+          'i',
+          'j',
+          'k',
+          'l',
+          'm',
+          'n',
+          'o',
+          'p',
+          'q',
+          'r',
+          's',
+          't',
+          'u',
+          'v',
+          'w',
+          'x',
+          'y',
+          'z',
+        ];
+        let result = '';
+        for (let i = 0; i < 6; i++) {
+          let index = Math.floor(Math.random() * 10);
+          result += randomArr[index];
+        }
+        return result;
+      }
+      // 拦截富文本编辑器
+      async function imageHandler(imageDataUrl, type, imageData) {
+        console.log(imageDataUrl);
+        const blob = imageData.toBlob();
+        const type2 = blob.type.slice(6);
+        let file = null;
+        // 没有id请求id
+        if (app.id == '') {
+          await axios
+            .post('/api/firstsave', {
+              newsItem: {
+                title: app.title,
+                type: app.saveNewsType,
+              },
+            })
+            .then((res) => {
+              app.id = res.data['LAST_INSERT_ID()'];
+              file = imageData.toFile(
+                app.id + '-' + randomFileName() + '.' + type2
+              );
+            });
+        }
+        // 存在id的话转换成文件
+        else {
+          file = imageData.toFile(
+            app.id + '-' + randomFileName() + '.' + type2
+          );
+        }
+        let formData = new FormData();
+        formData.append('file', file);
+        let urlList = null;
+        await axios.post('/api/upload', formData).then((res) => {
+          urlList = res.data;
+          app.imgArr = urlList;
+        });
+        for (let i = 0; i < urlList.length; i++) {
+          const url = urlList[i];
+          const addImageRange = app.$refs.myQuillEditor2.quill.getSelection();
+          const newRange =
+            0 + (addImageRange !== null ? addImageRange.index : 0);
+          app.$refs.myQuillEditor2.quill.insertEmbed(newRange, 'image', url);
+          app.$refs.myQuillEditor2.quill.setSelection(1 + newRange);
+        }
+      }
+    </script>
+    <script>
+      var ImageData = QuillImageDropAndPaste.ImageData;
+      Vue.use(window.VueQuillEditor);
+      const app = new Vue({
+        el: '#app',
+        data: {
+          columns: [
+            {
+              title: '新闻标题',
+              key: 'title',
+              ellipsis: true,
+            },
+            {
+              title: '来源IP',
+              key: 'ip',
+              ellipsis: true,
+            },
+            {
+              title: '新闻类型',
+              key: 'type',
+            },
+            {
+              title: '创建时间',
+              key: 'create_at',
+              ellipsis: true,
+            },
+            {
+              title: '修改时间',
+              key: 'change_at',
+              ellipsis: true,
+              sortable: true,
+            },
+          ],
+          tableData: [],
+          toolOptions: {
+            theme: 'snow',
+            placeholder: '请输入',
+            modules: {
+              toolbar: toolOptions,
+              imageResize: {},
+              imageDropAndPaste: {
+                // add an custom image handler
+                handler: imageHandler,
+              },
+            },
+          },
+          searchValue: '',
+          options: [
+            {
+              value: '所有新闻',
+              label: '所有新闻',
+            },
+            {
+              value: '公告',
+              label: '公告',
+            },
+            {
+              value: '通知',
+              label: '通知',
+            },
+            {
+              value: '已发布',
+              label: '已发布',
+            },
+            {
+              value: '未发布',
+              label: '未发布',
+            },
+          ],
+          // 添加新闻的新闻类型
+          options2: [
+            {
+              value: '公告',
+              label: '公告',
+            },
+            {
+              value: '通知',
+              label: '通知',
+            },
+            {
+              value: '已发布',
+              label: '已发布',
+            },
+            {
+              value: '未发布',
+              label: '未发布',
+            },
+          ],
+          newsType: '所有新闻',
+          content: '',
+          showDrawer: null,
+          id: '',
+          newDetail: null,
+          page: 1,
+          totalLen: null,
+          // 是否是新增新闻
+          ifAddNews: false,
+          saveNewsType: '',
+          imgArr: [],
+          showAlert: false,
+          title: '',
+          addingNews: false,
+        },
+        methods: {
+          debounce(fn, wait) {
+            let timeId = null;
+            return function () {
+              if (timeId) {
+                clearTimeout(timeId);
+              }
+              timeId = setTimeout(fn, wait);
+            };
+          },
+          // 使用js 点击一次触发一次动画
+          drawerAnimation() {
+            if (this.addingNews) {
+              const result = confirm(
+                '是否确认编辑页面？离开之后将不保存任何数据！'
+              );
+              if (result == true) {
+                axios
+                  .post('/api/deleteimg?id=' + this.id, { imgArr: this.imgArr })
+                  .then((res) => {
+                    if (res.data == 'ok') {
+                      this.addingNews = false;
+                      this.drawerAnimation();
+                      this.id = '';
+                    }
+                  });
+              }
+            } else {
+              this.showDrawer = !this.showDrawer;
+              const drawer = document.getElementById('drawer');
+              if (this.showDrawer) {
+                drawer.style.display = 'block';
+                drawer.style.animation = 'in .5s';
+              } else {
+                drawer.style.animation = 'in 0.5s reverse forwards';
+                setTimeout(() => {
+                  drawer.style.display = 'none';
+                }, 400);
+              }
+              drawer.addEventListener('animationend', function () {
+                drawer.style.animation = '';
+              });
+            }
+          },
+          judgeImgChange() {
+            // 判断之前上传的图片是否有删除
+            if (this.imgArr.length != 0) {
+              for (let index = 0; index < this.imgArr.length; index++) {
+                if (this.content.indexOf(this.imgArr[index] != -1)) {
+                  this.imgArr.splice(index, 1);
+                }
+              }
+            }
+          },
+          // 获取新闻
+          getNews() {
+            if (this.newsType == '所有新闻') {
+              if (this.searchValue != '') {
+                axios
+                  .get(
+                    '/api/getdata?page=' +
+                      this.page +
+                      '&search_value=' +
+                      this.searchValue
+                  )
+                  .then((res) => {
+                    res.data[0].forEach((element) => {
+                      element.title = this.getSimpleText(element.title);
+                    });
+                    this.tableData = res.data[0].filter((v) => {
+                      if (v.title) {
+                        return v.title.indexOf(this.searchValue) != -1;
+                      } else {
+                        axios.get('/deleterecord?id=' + v.id).then((res) => {
+                          console.log(res);
+                          (err) => {
+                            console.log(err);
+                          };
+                        });
+                      }
+                    });
+                    this.totalLen = res.data[1]['count(*)'];
+                  });
+              } else {
+                axios.get('/api/getdata?page=' + this.page).then((res) => {
+                  res.data[0].forEach((element) => {
+                    element.title = this.getSimpleText(element.title);
+                  });
+                  this.tableData = res.data[0];
+                  this.totalLen = res.data[1]['count(*)'];
+                });
+              }
+            } else {
+              if (this.searchValue != '') {
+                axios
+                  .get(
+                    '/api/getdata?type=' +
+                      this.newsType +
+                      '&page=' +
+                      this.page +
+                      '&search_value=' +
+                      this.searchValue
+                  )
+                  .then((res) => {
+                    res.data[0].forEach((element) => {
+                      element.title = this.getSimpleText(element.title);
+                    });
+                    this.tableData = res.data[0];
+                    console.log(res.data[1]['count(*)']);
+                    this.totalLen = res.data[1]['count(*)'];
+                  });
+              } else {
+                axios
+                  .get(
+                    '/api/getdata?type=' + this.newsType + '&page=' + this.page
+                  )
+                  .then((res) => {
+                    res.data[0].forEach((element) => {
+                      element.title = this.getSimpleText(element.title);
+                    });
+                    this.tableData = res.data[0];
+                    this.totalLen = res.data[1]['count(*)'];
+                  });
+              }
+            }
+          },
+          //html剔除富文本标签，留下纯文本
+          getSimpleText(html) {
+            let re1 = new RegExp('<.*?>', 'g'); //匹配html标签的正则表达式，"g"是搜索匹配多个符合的内容
+            let msg = html.replace(re1, ''); //执行替换成空字符
+            return msg;
+          },
+          //  新闻类型切换，请求不一样的类型
+          optionChange() {
+            this.page = 1;
+            this.getNews();
+          },
+          // 搜索新闻
+          searchNews() {
+            this.page = 1;
+            // 搜索数据库中所有符合条件的数据
+            if (this.searchValue != '') {
+              if (this.newsType != '所有新闻') {
+                axios
+                  .get(
+                    '/api/getdata?search_value=' +
+                      this.searchValue +
+                      '&type=' +
+                      this.newsType +
+                      '&page=' +
+                      this.page
+                  )
+                  .then((res) => {
+                    res.data[0].forEach((element) => {
+                      element.title = this.getSimpleText(element.title);
+                    });
+                    this.tableData = res.data[0];
+                    // 如果正在搜索那就进行过滤，同时要判断数据库里面是否有之前由于用户操作留下的空数据
+                    this.tableData = this.tableData.filter((v) => {
+                      if (v.title) {
+                        return v.title.indexOf(this.searchValue) != -1;
+                      } else {
+                        axios.get('/deleterecord?id=' + v.id).then((res) => {
+                          console.log(res);
+                          (err) => {
+                            console.log(err);
+                          };
+                        });
+                      }
+                    });
+                    this.totalLen = res.data[1]['count(*)'];
+                  });
+              } else {
+                axios
+                  .get(
+                    '/api/getdata?search_value=' +
+                      this.searchValue +
+                      '&page=' +
+                      this.page
+                  )
+                  .then((res) => {
+                    res.data[0].forEach((element) => {
+                      element.title = this.getSimpleText(element.title);
+                    });
+                    this.tableData = res.data[0];
+                    this.tableData = this.tableData.filter((v) => {
+                      if (v.title) {
+                        return v.title.indexOf(this.searchValue) != -1;
+                      } else {
+                        axios.get('/deleterecord?id=' + v.id).then((res) => {
+                          console.log(res);
+                          (err) => {
+                            console.log(err);
+                          };
+                        });
+                      }
+                    });
+                    this.totalLen = res.data[1]['count(*)'];
+                  });
+              }
+            } else {
+              this.getNews();
+            }
+          },
+          // 添加新闻
+          addNews() {
+            this.ifAddNews = true;
+            this.drawerAnimation();
+            this.newDetail = null;
+            this.content = '';
+            this.addingNews = true;
+          },
+          // 分页请求数据
+          pageSizeChange(currentPage) {
+            this.page = currentPage;
+            this.getNews();
+          },
+          // 点击某一行然后弹出新闻预览
+          rowClick(e) {
+            this.ifAddNews = false;
+            this.drawerAnimation();
+            this.id = e.id;
+            axios.get('/api/getdetail?id=' + this.id).then((res) => {
+              this.newDetail = res.data[0];
+              this.content = res.data[0].content;
+              this.title = res.data[0].title;
+              this.saveNewsType = res.data[0].type;
+              this.imgArr = [];
+              this.imgArr = res.data[1];
+            });
+          },
+          saveContent() {
+            // 用户没输入标题
+            const element =
+              document.getElementsByTagName('h1')[0] ||
+              document.getElementsByTagName('h2')[0] ||
+              document.getElementsByTagName('h3')[0] ||
+              document.getElementsByTagName('h4')[0] ||
+              document.getElementsByTagName('h5')[0] ||
+              document.getElementsByTagName('h6')[0];
+            if (element) {
+              const titleValue = element.innerHTML;
+              if (
+                titleValue == '<br>' ||
+                titleValue == '' ||
+                titleValue == undefined
+              ) {
+                this.title = prompt('请输入标题');
+                let result = '<h1>' + this.title + '</h1>';
+                this.content = result + this.content;
+              } else {
+                this.title = titleValue;
+              }
+            } else {
+              this.title = prompt('请输入标题');
+              let result = '<h1>' + this.title + '</h1>';
+              this.content = result + this.content;
+            }
+            if (!this.saveNewsType) {
+              alert('请选择保存类型');
+            }
+            this.addingNews = false;
+            if (this.title && this.saveNewsType) {
+              this.judgeImgChange();
+              // 如果内容里面有图片那么要先存一部分内容获得id再将图片替换成相对路径后的数据进行存储
+              if (this.imgArr.length != 0) {
+                if (this.id == '') {
+                  const newsItem = {
+                    content: this.content,
+                    title: this.title,
+                    type: this.saveNewsType,
+                  };
+                  axios
+                    .post('/api/save', {
+                      newsItem: newsItem,
+                      imgArr: this.imgArr,
+                    })
+                    .then((res) => {
+                      if (res.data == 'ok') {
+                        this.drawerAnimation();
+                        this.getNews();
+                      }
+                    });
+                }
+                // 修改已有文本
+                else {
+                  const newsItem = {
+                    content: this.content,
+                    title: this.title,
+                    type: this.saveNewsType,
+                    id: this.id,
+                  };
+                  axios
+                    .post('/api/save?id=' + this.id, {
+                      newsItem: newsItem,
+                      imgArr: this.imgArr,
+                    })
+                    .then((res) => {
+                      if (res.data == 'ok') {
+                        this.drawerAnimation();
+                        this.getNews();
+                        // 修改完数据之后将id重置
+                        this.id = '';
+                      }
+                    });
+                }
+              }
+              // 没有图片上传直接存进数据库
+              else {
+                if (this.id == '') {
+                  const newsItem = {
+                    content: this.content,
+                    title: this.title,
+                    type: this.saveNewsType,
+                  };
+                  axios
+                    .post('/api/save', { newsItem: newsItem })
+                    .then((res) => {
+                      if (res.data == 'ok') {
+                        this.drawerAnimation();
+                        this.getNews();
+                      }
+                    });
+                }
+                // 修改已有文本
+                else {
+                  const newsItem = {
+                    content: this.content,
+                    title: this.title,
+                    type: this.saveNewsType,
+                    id: this.id,
+                  };
+                  axios
+                    .post('/api/save?id=' + this.id, {
+                      newsItem: newsItem,
+                    })
+                    .then((res) => {
+                      if (res.data == 'ok') {
+                        this.drawerAnimation();
+                        this.getNews();
+                        // 修改完数据之后将id重置
+                        this.id = '';
+                      }
+                    });
+                }
+              }
+            }
+          },
+          // 富文本编辑器的获得焦点的操作，一个是预览状态不能编辑，一个是编辑状态拦截图片上传
+          onEditorFocus() {
+            if (this.ifAddNews) {
+              this.$refs.myQuillEditor2.quill
+                .getModule('toolbar')
+                .addHandler('image', this.uploadImageHandler);
+            } else {
+              this.$refs.myQuillEditor.quill.enable(false); // 在获取焦点的时候禁用
+            }
+          },
+          // egg结合node底层实现文件上传
+          async uploadImage(file) {
+            if (this.id == '') {
+              await axios
+                .post('/api/firstsave', {
+                  newsItem: {
+                    title: this.title,
+                    type: this.saveNewsType,
+                  },
+                })
+                .then((res) => {
+                  this.id = res.data['LAST_INSERT_ID()'];
+                });
+            }
+            let formData = new FormData();
+            formData.append('file', file);
+            let urlList = null;
+            await axios
+              .post('/api/upload?id=' + this.id, formData)
+              .then((res) => {
+                urlList = res.data;
+                this.imgArr = urlList;
+              });
+            for (let i = 0; i < urlList.length; i++) {
+              const url = urlList[i];
+              const addImageRange = this.$refs.myQuillEditor2.quill.getSelection();
+              const newRange =
+                0 + (addImageRange !== null ? addImageRange.index : 0);
+              this.$refs.myQuillEditor2.quill.insertEmbed(
+                newRange,
+                'image',
+                url
+              );
+              this.$refs.myQuillEditor2.quill.setSelection(1 + newRange);
+            }
+          },
+          // 拦截富文本编辑器
+          uploadImageHandler() {
+            let fileInput = document.querySelector('input.ql-image[type=file]');
+            if (fileInput == null) {
+              fileInput = document.createElement('input');
+              fileInput.setAttribute('type', 'file');
+              // 设置成可多文件上传
+              fileInput.setAttribute('multiple', true);
+              fileInput.setAttribute(
+                'accept',
+                'image/png, image/gif, image/jpeg, image/bmp, image/x-icon'
+              );
+              fileInput.classList.add('ql-image');
+              fileInput.addEventListener('change', function (e) {
+                const fileList = e.target.files;
+                console.log(fileList);
+                let file = null;
+                let reader = null;
+                if (fileList.length > 0) {
+                  for (let i = 0; i < fileList.length; i++) {
+                    file = fileList[i];
+                    const type = file.type;
+                    reader = new FileReader();
+                    reader.onload = (e) => {
+                      // handle the inserted image
+                      const dataUrl = e.target.result;
+                      imageHandler(dataUrl, type, new ImageData(dataUrl, type));
+                      fileInput.value = '';
+                    };
+                    reader.readAsDataURL(file);
+                  }
+                }
+              });
+              fileInput.click();
+            }
+          },
+        },
+        mounted() {
+          this.getNews();
+          // 初始使得编辑界面不显示
+          const drawer = document.getElementById('drawer');
+          drawer.style.display = 'none';
+        },
+      });
+    </script>
+  </body>
+</html>

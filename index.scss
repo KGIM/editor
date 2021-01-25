@@ -1,0 +1,321 @@
+$fontColor: #aab8c5;
+$bgcColor: #343a40;
+$borderColor: #464f5b;
+$activeColor: #4baa4e;
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  background-color: $bgcColor;
+  color: $fontColor;
+  font-size: 12px;
+}
+
+// 首页标题
+#index-title {
+  height: 49px;
+  line-height: 49px;
+  background-color: #404954 !important;
+  color: #aab8c5;
+  box-shadow: 0 0 8px 0 #464f5b;
+  font-size: 20px;
+}
+
+#home {
+  padding: 16px;
+}
+
+.toolbar {
+  width: 100%;
+  min-height: 60px;
+  overflow: hidden;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  justify-content: space-between;
+  margin: 0 0 10px;
+  .toolbar-left {
+    width: 600px;
+    height: 100%;
+    display: flex;
+    font-size: 12px;
+    .item-title {
+      padding: 5px;
+    }
+    .left-item {
+      margin-right: 6px;
+      input {
+        width: 300px;
+        height: 32px;
+        border: 1px solid $borderColor;
+        outline: none;
+        padding-left: 8px;
+        background-color: $bgcColor;
+        color: $fontColor;
+        &:hover,
+        &:focus {
+          border-color: $activeColor;
+        }
+        &::placeholder {
+          color: $fontColor;
+        }
+      }
+      .ivu-select {
+        width: 80px;
+        height: 32px;
+        // 选择器
+        .ivu-select-selection {
+          border: 1px solid $borderColor;
+          &:hover,
+          &:focus {
+            border-color: $activeColor;
+          }
+          .ivu-select-placeholder {
+            color: $fontColor;
+          }
+        }
+        // 选择器列表
+        .ivu-select-dropdown {
+          background-color: #37404a;
+          .ivu-select-dropdown-list {
+            .ivu-select-item {
+              color: $fontColor;
+              background-color: #37404a;
+              &:hover {
+                background-color: $bgcColor;
+              }
+              &.ivu-select-item-selected {
+                color: $activeColor;
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+  .search-btn {
+    height: 32px;
+    line-height: 2px;
+    border: none;
+    outline: none;
+    background-color: $activeColor;
+    border-radius: 2px;
+    color: white;
+    outline: none;
+    padding: 9px 15px;
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 28px;
+  }
+  .addBtn {
+    height: 32px;
+    line-height: 2px;
+    border: 1px solid $borderColor;
+    outline: none;
+    padding: 9px 15px;
+    font-size: 12px;
+    margin-left: 5px;
+    margin-top: 28px;
+    &:hover {
+      color: $activeColor;
+      border-color: $activeColor;
+    }
+  }
+  // 分页
+  .toolbar-right {
+    min-width: 290px;
+    flex: 1;
+    text-align: right;
+    .ivu-page {
+      li {
+        border: 1px solid $borderColor;
+        background-color: $bgcColor;
+        &:hover {
+          border: 1px solid $activeColor;
+          a {
+            color: $activeColor;
+          }
+        }
+      }
+      .ivu-page-item-active {
+        border: 1px solid $activeColor;
+        a {
+          color: $activeColor;
+        }
+      }
+      input {
+        border: 1px solid $borderColor;
+        background-color: $bgcColor;
+        color: $fontColor;
+        &:hover {
+          border-color: $activeColor;
+        }
+      }
+    }
+  }
+}
+
+.ivu-table {
+  margin-top: 16px;
+  thead div {
+    display: flex;
+    align-items: center;
+    padding: 0;
+    background-color: #404954 !important;
+    span,
+    i {
+      background-color: #404954 !important;
+    }
+    span {
+      font-size: 20px;
+      color: #fff;
+      i {
+        color: #fff;
+      }
+    }
+  }
+  tbody div {
+    padding: 0;
+    height: 48px;
+    line-height: 48px;
+    text-align: left;
+  }
+  th,
+  td {
+    border-bottom: 1px solid $borderColor !important;
+  }
+  tr td {
+    background-color: $bgcColor;
+  }
+  .ivu-table-row-hover {
+    td,
+    div,
+    span {
+      background-color: #444e5a;
+      color: $activeColor;
+    }
+  }
+}
+.ivu-table-header thead tr th {
+  height: 45px;
+  line-height: 45px;
+  padding: 0 !important;
+  background-color: #404954 !important;
+}
+// 覆盖table表格边框
+.ivu-table-wrapper /deep/ .ivu-table:after {
+  width: 0;
+}
+.ivu-table-wrapper /deep/ .ivu-table:before {
+  height: 0;
+}
+
+.back {
+  width: 100vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  background-color: rgba(55, 55, 55, 0.6);
+}
+
+#drawer {
+  // 固定弹窗的位置
+  width: 60vw;
+  height: 100vh;
+  position: fixed;
+  top: 0;
+  right: 0;
+  .editor-container {
+    // 设置编辑器的头部细节和富文本编辑器的自适应
+    height: 100%;
+    display: flex;
+    flex-direction: column; //修改主轴方向
+    .container-header {
+      .title {
+        padding: 14px 0;
+        border-bottom: 1px solid #464f5b;
+      }
+      padding: 16px;
+      padding-bottom: 0;
+      .detail {
+        padding-top: 16px;
+        position: relative;
+        .ivu-select {
+          width: 180px;
+          height: 32px;
+          // 选择器
+          .ivu-select-selection {
+            border: 1px solid $borderColor;
+            &:hover,
+            &:focus {
+              border-color: $activeColor;
+            }
+            .ivu-select-placeholder {
+              color: $fontColor;
+            }
+          }
+          // 选择器列表
+          .ivu-select-dropdown {
+            background-color: #37404a;
+            .ivu-select-dropdown-list {
+              .ivu-select-item {
+                color: $fontColor;
+                background-color: #37404a;
+                &:hover {
+                  background-color: $bgcColor;
+                }
+                &.ivu-select-item-selected {
+                  color: $activeColor;
+                }
+              }
+            }
+          }
+        }
+      }
+      .edit-btn {
+        position: absolute;
+        right: 0;
+        bottom: 0;
+        border: none;
+        outline: none;
+        height: 32px;
+        line-height: 32px;
+        padding: 0 15px;
+        background-color: $activeColor;
+        color: white;
+      }
+    }
+    .quill-editor {
+      // 整个富文本编辑器固定高度
+      flex: 1;
+      // 获取最大高度然后设定多出来的隐藏
+      max-height: auto;
+      overflow: hidden;
+      // 富文本的工具栏和编辑页面自适应界面
+      display: flex;
+      flex-direction: column;
+      // 文字编辑区域自适应然后进行一个浮动测试
+      .ql-container {
+        flex: 1;
+        overflow: auto;
+      }
+      * {
+        background-color: #fff;
+      }
+      padding: 16px;
+      .ql-snow * {
+        color: black;
+      }
+    }
+  }
+}
+
+@keyframes in {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0%);
+  }
+}
